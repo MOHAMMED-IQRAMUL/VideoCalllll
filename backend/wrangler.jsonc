@@ -1,0 +1,26 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "backend",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-09-16",
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"durable_objects": {
+		"bindings": [
+			{ "name": "CALL_ROOM", "class_name": "CallRoom" }
+		]
+	},
+	"migrations": [
+		{ "tag": "v1", "new_sqlite_classes": ["CallRoom"] }
+	],
+
+	"d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "videocall",
+      "database_id": "07056d52-7c85-4fed-a85b-2190a98211a7"
+    }
+  ]
+}
