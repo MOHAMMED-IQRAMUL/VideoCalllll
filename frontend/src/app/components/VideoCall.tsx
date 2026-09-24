@@ -66,12 +66,14 @@ export default function VideoCall({ user, onLeave, onSessionChange }: { user: Pe
   };
 
   useEffect(() => {
-    setOnlineUsers(readCachedUsers(user.id));
-    void loadUsers();
+    const initialLoad = window.setTimeout(() => void loadUsers(), 0);
     const timer = window.setInterval(() => {
       void loadUsers();
     }, 5000);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(timer);
+    };
   }, [user.id]);
 
   useEffect(() => {
@@ -326,16 +328,14 @@ function CallSurface({ user, roomId, label, peerId, phase, onlineUsers, incoming
   const [video, setVideo] = useState(true);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [leavePromptOpen, setLeavePromptOpen] = useState(false);
+  const [tileMinWidth, setTileMinWidth] = useState(360);
+  const [spotlightId, setSpotlightId] = useState<"local" | "remote" | null>(null);
   const [tileOrder, setTileOrder] = useState<("local" | "remote")[]>(["remote", "local"]);
   const [draggedTile, setDraggedTile] = useState<"local" | "remote" | null>(null);
-  const hadRemotePeerRef = useRef(false);
   const call = useCallRoom({ roomId, user, roomType: "direct" });
   const effectivePhase = Object.keys(call.remoteStreams).length > 0 ? "connected" : phase;
   const remoteJoined = call.peers.some((peer) => peer.id === peerId);
-  useEffect(() => {
-    if (remoteJoined) hadRemotePeerRef.current = true;
-  }, [remoteJoined]);
-  const remotePlaceholder = remoteJoined ? "Camera off" : hadRemotePeerRef.current ? "Left the call" : "Not joined yet";
+  const remotePlaceholder = remoteJoined ? "Camera off" : "Not joined yet";
 
   useEffect(() => {
     if (localVideoRef.current && call.localStream) localVideoRef.current.srcObject = call.localStream;
@@ -368,8 +368,7 @@ function CallSurface({ user, roomId, label, peerId, phase, onlineUsers, incoming
 
   const orderedTiles = tileOrder.map((id) => ({
     id,
-    element:
-      id === "local" ? (
+    element: (isSpotlight: boolean, onSpotlight: () => void) => id === "local" ? (
         <VideoTile
           key="local"
           videoRef={localVideoRef}
@@ -386,6 +385,8 @@ function CallSurface({ user, roomId, label, peerId, phase, onlineUsers, incoming
             setDraggedTile(null);
           }}
           onDragEnd={() => setDraggedTile(null)}
+          isSpotlight={isSpotlight}
+          onSpotlight={onSpotlight}
         />
       ) : (
         <VideoTile
@@ -404,9 +405,13 @@ function CallSurface({ user, roomId, label, peerId, phase, onlineUsers, incoming
             setDraggedTile(null);
           }}
           onDragEnd={() => setDraggedTile(null)}
+          isSpotlight={isSpotlight}
+          onSpotlight={onSpotlight}
         />
       ),
   }));
+  const spotlightTile = orderedTiles.find((tile) => tile.id === spotlightId);
+  const galleryTiles = orderedTiles.filter((tile) => tile.id !== spotlightId);
 
   const statusText = effectivePhase === "incoming" ? "Incoming call" : effectivePhase === "outgoing" ? "Calling…" : call.connected ? "Connected" : "Connecting...";
   const phaseIcon = effectivePhase === "incoming" ? "incoming" : effectivePhase === "outgoing" ? "outgoing" : "call";
@@ -428,9 +433,17 @@ function CallSurface({ user, roomId, label, peerId, phase, onlineUsers, incoming
         <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">1-on-1</span>
       </div>
 
-      <div className="grid min-h-0 flex-1 auto-rows-min gap-3 overflow-y-auto md:grid-cols-2 md:auto-rows-auto">
-        {orderedTiles.map((tile) => tile.element)}
+      <div className="min-h-0 flex-1 overflow-auto pr-1">
+        {spotlightTile && <div className="mb-3">{tileElementWithSpotlight(spotlightTile, true)}</div>}
+        <div className="room-grid gap-3" style={{ "--room-tile-min": `${tileMinWidth}px` } as React.CSSProperties}>
+          {galleryTiles.map((tile) => tileElementWithSpotlight(tile, false))}
+        </div>
       </div>
+
+      <label className="flex shrink-0 items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+        <span>Tile size</span>
+        <input aria-label="Adjust tile size" type="range" min="300" max="560" step="20" value={tileMinWidth} onChange={(event) => setTileMinWidth(Number(event.target.value))} className="w-28 accent-[var(--color-primary)]" />
+      </label>
 
       <div className="flex shrink-0 justify-center gap-2 sm:gap-3">
         <ControlButton icon={audio ? "mic" : "mic-off"} label={audio ? "Mute" : "Unmute"} onClick={() => toggle("audio")} />
@@ -468,6 +481,10 @@ function CallSurface({ user, roomId, label, peerId, phase, onlineUsers, incoming
       )}
     </div>
   );
+
+  function tileElementWithSpotlight(tile: (typeof orderedTiles)[number], isSpotlight: boolean) {
+    return <div key={tile.id} className={isSpotlight ? "max-h-[min(65vh,720px)]" : undefined}>{tile.element(isSpotlight, () => setSpotlightId(isSpotlight ? null : tile.id))}</div>;
+  }
 }
 
 function CallSidePanel({ open, onToggle, onlineUsers, incomingCall, onAnswerCall }: { open: boolean; onToggle: () => void; onlineUsers: Peer[]; incomingCall: CallInvite | null; onAnswerCall: (accept: boolean) => Promise<void> }) {
@@ -515,6 +532,8 @@ function VideoTile({
   onDragOver,
   onDrop,
   onDragEnd,
+  isSpotlight,
+  onSpotlight,
 }: {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   name: string;
@@ -528,6 +547,8 @@ function VideoTile({
   onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void;
   onDrop?: () => void;
   onDragEnd?: () => void;
+  isSpotlight?: boolean;
+  onSpotlight?: () => void;
 }) {
   const videoStatus = placeholderText === "Not joined yet" ? "Not joined" : placeholderText === "Left the call" ? "Left" : muted ? "Camera off" : "Live";
 
@@ -542,7 +563,9 @@ function VideoTile({
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between rounded-t-2xl border-b-[var(--border-default)] bg-[var(--color-bg-secondary)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
         <span>{name === "You" ? "Local" : "Remote"}</span>
-        <span>{draggable ? "drag" : "live"}</span>
+        <button type="button" aria-label={isSpotlight ? "Restore tile" : `Enlarge ${name}'s camera`} onClick={(event) => { event.stopPropagation(); onSpotlight?.(); }} className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-primary)]">
+          <CallIcon name={isSpotlight ? "shrink" : "expand"} className="h-3.5 w-3.5" />
+        </button>
       </div>
       <div className={`absolute right-3 top-12 flex max-w-[45%] items-center gap-1.5 rounded-full border-[var(--border-default)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap ${muted ? "bg-[var(--color-warning-muted)] text-[var(--color-warning)]" : "bg-[var(--color-success-muted)] text-[var(--color-success)]"}`}>
         <CallIcon name={muted ? "camera-off" : "camera"} className="h-3.5 w-3.5" />

@@ -91,6 +91,49 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <section className="mt-16 border-t-[var(--border-default)] pt-8">
+          <div className="mb-6 flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[var(--color-text-secondary)]">
+                The stack behind the call
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] md:text-3xl">
+                Real-time, browser-first, Cloudflare-native.
+              </h2>
+            </div>
+            <p className="max-w-sm text-sm leading-6 text-[var(--color-text-secondary)]">
+              Every layer has a clear job: the browser owns media, the Worker coordinates, and rooms stay lightweight.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              { label: "Interface", value: "Next.js + React 19", detail: "Responsive controls and call workspace" },
+              { label: "Transport", value: "WebRTC + WebSocket", detail: "Direct media with fast signaling" },
+              { label: "Runtime", value: "Workers + D1 + DO", detail: "Edge APIs, presence, and rooms" },
+            ].map((item) => (
+              <article key={item.label} className="border-[var(--border-default)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-sm)] transition-transform duration-150 hover:-translate-y-1 hover:shadow-[var(--shadow-md)]">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">{item.label}</p>
+                <h3 className="mt-4 text-xl font-black tracking-[-0.04em]">{item.value}</h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-4 pb-10 pt-8 md:grid-cols-2">
+          <article className="border-[var(--border-default)] bg-[var(--color-secondary)] p-6 text-[var(--color-text-inverse)] shadow-[var(--shadow-md)]">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-primary)]">01 / Direct calls</p>
+            <h2 className="mt-4 text-2xl font-black tracking-[-0.04em]">Find a person. Start a conversation.</h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--color-text-inverse)] opacity-75">Presence, invites, acceptance, and peer connections are coordinated without a media server in the middle.</p>
+          </article>
+          <article className="border-[var(--border-default)] bg-[var(--color-primary-soft)] p-6 shadow-[var(--shadow-md)]">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-secondary)]">02 / Shared rooms</p>
+            <h2 className="mt-4 text-2xl font-black tracking-[-0.04em]">Give a room a name. Let people join.</h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--color-text-secondary)]">Durable Objects keep each room synchronized while participants manage their own camera, microphone, and layout.</p>
+          </article>
+        </section>
       </div>
     </main>
   );

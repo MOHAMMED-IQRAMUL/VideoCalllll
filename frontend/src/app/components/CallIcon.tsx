@@ -2,7 +2,7 @@
 
 import type { ReactNode, SVGProps } from "react";
 
-type IconName = "call" | "incoming" | "outgoing" | "end" | "mic" | "mic-off" | "camera" | "camera-off" | "panel-open" | "panel-close";
+type IconName = "call" | "incoming" | "outgoing" | "end" | "mic" | "mic-off" | "camera" | "camera-off" | "panel-open" | "panel-close" | "expand" | "shrink";
 
 const paths: Record<IconName, ReactNode> = {
   call: <path d="M7.2 3.5 4.8 5.9c-.7.7-.9 1.8-.5 2.7 1.8 4.3 5.3 7.8 9.6 9.6.9.4 2 .2 2.7-.5l2.4-2.4-3.3-2.5-2 1.4a12.2 12.2 0 0 1-4.2-4.2l1.4-2-2.5-3.3Z" />,
@@ -15,6 +15,8 @@ const paths: Record<IconName, ReactNode> = {
   "camera-off": <><path d="m3 3 18 18M10 6h4a2 2 0 0 1 2 2v1M16 12v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1M16 10l5-3v10l-5-3" /></>,
   "panel-open": <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 4v16M13 12h4M15 10l2 2-2 2" /></>,
   "panel-close": <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 4v16M17 12h-4M15 10l-2 2 2 2" /></>,
+  expand: <><path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4" /><path d="m4 4 5 5M20 4l-5 5M20 20l-5-5M4 20l5-5" /></>,
+  shrink: <><path d="m9 4-5 5M15 4l5 5M20 15l-5 5M4 15l5 5" /><path d="M4 9h5V4M15 4v5h5M20 15h-5v5M9 20v-5H4" /></>,
 };
 
 export default function CallIcon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGElement>) {

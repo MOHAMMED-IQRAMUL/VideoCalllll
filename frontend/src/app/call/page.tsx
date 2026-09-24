@@ -35,16 +35,15 @@ const NAV_ITEMS: NavItem[] = [
 export default function CallPage() {
   const [active, setActive] = useState<Feature>("video-calling");
   const [name, setName] = useState("");
-  const [user, setUser] = useState<Peer | null>(null);
+  const [user, setUser] = useState<Peer | null>(() => {
+    if (typeof window === "undefined") return null;
+    const savedId = window.localStorage.getItem("callkaro-id");
+    const savedName = window.localStorage.getItem("callkaro-name");
+    return savedId && savedName ? { id: savedId, name: savedName } : null;
+  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
   const [pendingFeature, setPendingFeature] = useState<Feature | null>(null);
-
-  useEffect(() => {
-    const savedId = window.localStorage.getItem("callkaro-id");
-    const savedName = window.localStorage.getItem("callkaro-name");
-    if (savedId && savedName) setUser({ id: savedId, name: savedName });
-  }, []);
 
   useEffect(() => {
     if (!user) return;

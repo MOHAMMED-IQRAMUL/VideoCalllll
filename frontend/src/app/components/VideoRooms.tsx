@@ -110,6 +110,8 @@ function RoomSurface({ roomId, user, onLeave }: { roomId: string; user: Peer; on
   const [audio, setAudio] = useState(true);
   const [video, setVideo] = useState(true);
   const [leavePromptOpen, setLeavePromptOpen] = useState(false);
+  const [tileMinWidth, setTileMinWidth] = useState(320);
+  const [spotlightId, setSpotlightId] = useState<string | null>(null);
   const [draggedTileId, setDraggedTileId] = useState<string | null>(null);
   const [tileOrder, setTileOrder] = useState<string[]>([]);
   const call = useCallRoom({ roomId, user });
@@ -127,17 +129,15 @@ function RoomSurface({ roomId, user, onLeave }: { roomId: string; user: Peer; on
     })),
   ];
 
-  useEffect(() => {
-    setTileOrder((current) => {
-      const nextIds = tileEntries.map((tile) => tile.id);
-      if (current.length === nextIds.length && nextIds.every((id, index) => current[index] === id)) return current;
-      return nextIds;
-    });
-  }, [tileEntries]);
+  const orderedTiles = [
+    ...tileOrder
+      .map((id) => tileEntries.find((tile) => tile.id === id))
+      .filter((tile): tile is (typeof tileEntries)[number] => Boolean(tile)),
+    ...tileEntries.filter((tile) => !tileOrder.includes(tile.id)),
+  ];
 
-  const orderedTiles = tileOrder
-    .map((id) => tileEntries.find((tile) => tile.id === id))
-    .filter((tile): tile is (typeof tileEntries)[number] => Boolean(tile));
+  const spotlightTile = orderedTiles.find((tile) => tile.id === spotlightId);
+  const galleryTiles = orderedTiles.filter((tile) => tile.id !== spotlightId);
 
   const reorderTiles = (fromId: string, toId: string) => {
     if (fromId === toId) return;
@@ -161,13 +161,26 @@ function RoomSurface({ roomId, user, onLeave }: { roomId: string; user: Peer; on
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-[var(--color-bg)] p-2 sm:p-4">
-      <div className="flex shrink-0 items-center justify-between border-[var(--border-default)] bg-[var(--color-surface)] px-3 py-2.5 shadow-[var(--shadow-sm)]">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-[var(--border-default)] bg-[var(--color-surface)] px-3 py-2.5 shadow-[var(--shadow-sm)]">
         <div>
           <p className="text-sm font-black tracking-[-0.04em] text-[var(--color-text-primary)]">Room: {roomId}</p>
           <p className="text-xs text-[var(--color-text-secondary)]">
             {call.peers.length + 1} participant{call.peers.length === 0 ? "" : "s"} · {roomStateText}
           </p>
         </div>
+        <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+          <span>Tile size</span>
+          <input
+            aria-label="Adjust tile size"
+            type="range"
+            min="260"
+            max="520"
+            step="20"
+            value={tileMinWidth}
+            onChange={(event) => setTileMinWidth(Number(event.target.value))}
+            className="w-24 accent-[var(--color-primary)] sm:w-32"
+          />
+        </label>
         <button
           onClick={() => setLeavePromptOpen(true)}
           className="border-[var(--border-default)] bg-[var(--color-surface)] px-3 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-text-primary)] shadow-[var(--shadow-sm)] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
@@ -176,15 +189,32 @@ function RoomSurface({ roomId, user, onLeave }: { roomId: string; user: Peer; on
         </button>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3 overflow-y-auto">
-        {orderedTiles.map((tile) => (
+      <div className="min-h-0 flex-1 overflow-auto pr-1">
+        {spotlightTile && (
+          <div className="mb-3">
+            <Tile
+              key={spotlightTile.id}
+              {...spotlightTile}
+              isSpotlight
+              onSpotlight={() => setSpotlightId(null)}
+              draggable
+              isDragging={draggedTileId === spotlightTile.id}
+              onDragStart={() => setDraggedTileId(spotlightTile.id)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => {
+                if (draggedTileId) reorderTiles(draggedTileId, spotlightTile.id);
+                setDraggedTileId(null);
+              }}
+              onDragEnd={() => setDraggedTileId(null)}
+            />
+          </div>
+        )}
+        <div className="room-grid gap-3" style={{ "--room-tile-min": `${tileMinWidth}px` } as React.CSSProperties}>
+        {galleryTiles.map((tile) => (
           <Tile
             key={tile.id}
-            name={tile.name}
-            stream={tile.stream}
-            muted={tile.muted}
-            audioMuted={tile.audioMuted}
-            mirror={tile.mirror}
+            {...tile}
+            onSpotlight={() => setSpotlightId(tile.id)}
             draggable
             isDragging={draggedTileId === tile.id}
             onDragStart={() => setDraggedTileId(tile.id)}
@@ -196,6 +226,7 @@ function RoomSurface({ roomId, user, onLeave }: { roomId: string; user: Peer; on
             onDragEnd={() => setDraggedTileId(null)}
           />
         ))}
+        </div>
       </div>
 
       <div className="flex shrink-0 justify-center gap-2 sm:gap-3">
@@ -239,6 +270,8 @@ function Tile({
   onDragOver,
   onDrop,
   onDragEnd,
+  isSpotlight,
+  onSpotlight,
 }: {
   name: string;
   stream: MediaStream | null;
@@ -251,6 +284,8 @@ function Tile({
   onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void;
   onDrop?: () => void;
   onDragEnd?: () => void;
+  isSpotlight?: boolean;
+  onSpotlight?: () => void;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
 
@@ -265,11 +300,18 @@ function Tile({
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      className={`group relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl border-[var(--border-default)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)] transition-all duration-150 ${isDragging ? "scale-[1.01] opacity-80" : "hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]"}`}
+      className={`group relative flex ${isSpotlight ? "aspect-video max-h-[min(65vh,720px)]" : "aspect-video"} items-center justify-center overflow-hidden rounded-2xl border-[var(--border-default)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)] transition-all duration-150 ${isDragging ? "scale-[1.01] opacity-80" : "hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]"}`}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between rounded-t-2xl border-b-[var(--border-default)] bg-[var(--color-bg-secondary)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
         <span>{name === "You" ? "Local" : "Remote"}</span>
-        <span>{draggable ? "drag" : "live"}</span>
+        <button
+          type="button"
+          aria-label={isSpotlight ? "Restore tile" : `Enlarge ${name}'s camera`}
+          onClick={(event) => { event.stopPropagation(); onSpotlight?.(); }}
+          className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-primary)]"
+        >
+          <CallIcon name={isSpotlight ? "shrink" : "expand"} className="h-3.5 w-3.5" />
+        </button>
       </div>
       <div className={`absolute right-3 top-12 flex max-w-[45%] items-center gap-1.5 rounded-full border-[var(--border-default)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap ${muted ? "bg-[var(--color-warning-muted)] text-[var(--color-warning)]" : "bg-[var(--color-success-muted)] text-[var(--color-success)]"}`}>
         <CallIcon name={muted ? "camera-off" : "camera"} className="h-3.5 w-3.5" />

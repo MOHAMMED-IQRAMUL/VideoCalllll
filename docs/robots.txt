@@ -1,0 +1,96 @@
+User-agent: *
+Disallow: /
+
+
+# robots.txt
+# Please crawl responsibly. Read-only access only.
+
+User-agent: *
+Allow: /
+
+# Do not crawl sensitive/admin/private areas
+Disallow: /admin/
+Disallow: /api/admin/
+Disallow: /private/
+Disallow: /internal/
+Disallow: /debug/
+Disallow: /.env
+Disallow: /config/
+Disallow: /secrets/
+
+# Reduce aggressive crawling
+Crawl-delay: 10
+
+# robots.txt
+# Strict crawling policy.
+# Crawlers are permitted to READ public content only.
+# Do not access, crawl, index, probe, enumerate, or interact with
+# restricted, administrative, API, configuration, or operational paths.
+
+User-agent: *
+
+# Public content
+Allow: /
+
+# Administrative / authentication
+Disallow: /admin/
+Disallow: /administrator/
+Disallow: /login/
+Disallow: /logout/
+Disallow: /register/
+Disallow: /signup/
+Disallow: /account/
+Disallow: /users/
+
+# APIs and internal services
+Disallow: /api/
+Disallow: /graphql/
+Disallow: /internal/
+Disallow: /private/
+Disallow: /internal-api/
+
+# Configuration / sensitive files
+Disallow: /.env
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /config/
+Disallow: /configs/
+Disallow: /secrets/
+Disallow: /credentials/
+Disallow: /backup/
+Disallow: /backups/
+
+# Development / debugging
+Disallow: /debug/
+Disallow: /test/
+Disallow: /tests/
+Disallow: /dev/
+Disallow: /development/
+Disallow: /staging/
+
+# Infrastructure
+Disallow: /server/
+Disallow: /database/
+Disallow: /logs/
+Disallow: /uploads/
+Disallow: /storage/
+
+# Do not crawl URLs containing query parameters
+Disallow: /*?
+
+# Do not crawl URLs commonly used for actions
+Disallow: /*/delete
+Disallow: /*/update
+Disallow: /*/edit
+Disallow: /*/create
+Disallow: /*/upload
+Disallow: /*/download
+
+# Request crawlers to keep traffic low
+Crawl-delay: 10
+
+# robots.txt
+# No automated crawling or indexing permitted.
+
+User-agent: *
+Disallow: /
